@@ -29,7 +29,7 @@ pipeline {
             steps {
                 git(
                     branch: 'main',
-                    credentialsId: 'githubPAT',
+                    credentialsId: 'github',
                     url: 'https://github.com/manimozhyan/gitops-register-app'
                 )
             }
