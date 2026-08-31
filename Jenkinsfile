@@ -29,7 +29,7 @@ pipeline {
             steps {
                 git(
                     branch: 'main',
-                    credentialsId: 'githubPAT',
+                    credentialsId: 'github',
                     url: 'https://github.com/manimozhyan/gitops-register-app'
                 )
             }
@@ -55,13 +55,13 @@ pipeline {
             steps {
                 sh '''
                     echo "========================================="
-                    echo "Before update:"
+                    echo "Before Update"
                     echo "========================================="
 
                     cat deployment.yaml
 
                     echo ""
-                    echo "Updating image..."
+                    echo "Updating Docker image..."
 
                     sed -i \
                     "s|image: ${DOCKER_USER}/${APP_NAME}:.*|image: ${DOCKER_USER}/${APP_NAME}:${IMAGE_TAG}|g" \
@@ -69,7 +69,7 @@ pipeline {
 
                     echo ""
                     echo "========================================="
-                    echo "After update:"
+                    echo "After Update"
                     echo "========================================="
 
                     cat deployment.yaml
@@ -80,19 +80,28 @@ pipeline {
         stage('Validate Deployment YAML') {
             steps {
                 sh '''
-                    echo "Validating deployment.yaml..."
+                    echo "========================================="
+                    echo "Validating deployment.yaml"
+                    echo "========================================="
 
                     EXPECTED_IMAGE="${DOCKER_USER}/${APP_NAME}:${IMAGE_TAG}"
 
+                    echo "Expected image:"
+                    echo "${EXPECTED_IMAGE}"
+
                     if grep -q "image: ${EXPECTED_IMAGE}" deployment.yaml; then
-                        echo "========================================="
+
+                        echo ""
                         echo "Image updated successfully!"
-                        echo "Expected image: ${EXPECTED_IMAGE}"
-                        echo "========================================="
+
                     else
-                        echo "ERROR: Image was not updated correctly!"
-                        echo "Expected: ${EXPECTED_IMAGE}"
+
+                        echo ""
+                        echo "ERROR: Image was NOT updated correctly!"
+                        echo ""
+                        cat deployment.yaml
                         exit 1
+
                     fi
                 '''
             }
@@ -104,13 +113,17 @@ pipeline {
 
                     withCredentials([
                         usernamePassword(
-                            credentialsId: 'githubPAT',
+                            credentialsId: 'github',
                             usernameVariable: 'GIT_USERNAME',
                             passwordVariable: 'GIT_PASSWORD'
                         )
                     ]) {
 
                         sh '''
+                            echo "========================================="
+                            echo "Configuring Git"
+                            echo "========================================="
+
                             git config user.name "manimozhyan"
                             git config user.email "manimozhyan.v@gmail.com"
 
@@ -118,25 +131,29 @@ pipeline {
 
                             if git diff --cached --quiet; then
 
-                                echo "========================================="
+                                echo ""
                                 echo "No changes to commit."
                                 echo "Deployment already contains:"
                                 echo "${DOCKER_USER}/${APP_NAME}:${IMAGE_TAG}"
-                                echo "========================================="
 
                             else
+
+                                echo ""
+                                echo "Committing deployment.yaml..."
 
                                 git commit \
                                     -m "Update image to ${IMAGE_TAG}"
 
-                                echo "Pushing deployment.yaml to GitHub..."
+                                echo ""
+                                echo "Pushing changes to GitHub..."
 
                                 git push \
                                     "https://${GIT_USERNAME}:${GIT_PASSWORD}@github.com/manimozhyan/gitops-register-app.git" \
                                     HEAD:main
 
+                                echo ""
                                 echo "========================================="
-                                echo "Git push successful!"
+                                echo "Git Push Successful"
                                 echo "========================================="
 
                             fi
