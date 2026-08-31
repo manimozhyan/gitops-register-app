@@ -5,22 +5,26 @@ metadata:
 spec:
   replicas: 2
 
-    strategy:
+  strategy:
     type: RollingUpdate
     rollingUpdate:
       maxSurge: 0
       maxUnavailable: 1
+
   selector:
     matchLabels:
       app: register-app
+
   template:
     metadata:
       labels:
         app: register-app
+
     spec:
       containers:
         - name: register-app
           image: manimozhyan/register-app-pipeline:1.0.0-27
+
           resources:
             requests:
               cpu: "100m"
@@ -28,5 +32,6 @@ spec:
             limits:
               cpu: "500m"
               memory: "256Mi"
+
           ports:
             - containerPort: 8080
